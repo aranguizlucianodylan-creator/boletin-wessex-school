@@ -16,17 +16,15 @@ npm run dev
 
 Luego abre la URL que indique Vite en el navegador.
 
-## 3. Agregar una revista nueva gratis
+## 3. Agregar una revista nueva desde el panel
 
 1. Exporta el PDF desde Canva.
-2. Abre `/admin`.
-3. En `Publicar boletin`, selecciona el PDF y completa los datos.
-4. El panel descargara automaticamente:
-   - el PDF renombrado para web
-   - un `issues.json` actualizado
-5. Reemplaza estos archivos en el proyecto:
-   - `public/pdfs/<tu-archivo>.pdf`
-   - `public/data/issues.json`
+2. Abre `/#/admin`.
+3. Configura una vez un token de GitHub con permisos de escritura al repo.
+4. En `Publicar boletin`, selecciona el PDF y completa los datos.
+5. Pulsa `Publicar boletin`.
+6. El panel subira el PDF y actualizara `issues.json` directamente en GitHub.
+7. GitHub Pages publicara la nueva edicion automaticamente.
 
 ## 4. Publicar gratis en GitHub Pages
 
@@ -67,9 +65,8 @@ Luego puedes subir `dist/` a GitHub Pages, Netlify Free, Vercel Free, Cloudflare
 
 1. Abre `/admin`.
 2. En `Gestionar boletines`, elimina el boletin deseado.
-3. Se descargara un nuevo `issues.json`.
-4. Reemplaza `public/data/issues.json` por ese archivo.
-5. Ejecuta `npm run build` otra vez.
+3. El panel actualizara `issues.json` en GitHub automaticamente.
+4. GitHub Pages volvera a desplegar el sitio.
 
 ## 7. Si el PDF pesa demasiado
 
