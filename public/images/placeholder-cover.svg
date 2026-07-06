@@ -1,0 +1,10 @@
+<svg width="600" height="800" viewBox="0 0 600 800" xmlns="http://www.w3.org/2000/svg">
+  <rect width="600" height="800" rx="36" fill="#f7efe2"/>
+  <rect x="60" y="70" width="480" height="660" rx="26" fill="#fffdf9" stroke="#d8cdb8" stroke-width="2"/>
+  <path d="M140 240C220 175 380 175 460 240" stroke="#4b6584" stroke-width="8" stroke-linecap="round"/>
+  <path d="M185 340H415" stroke="#213042" stroke-width="6" stroke-linecap="round"/>
+  <path d="M185 390H380" stroke="#213042" stroke-width="6" stroke-linecap="round"/>
+  <path d="M185 440H355" stroke="#213042" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="300" cy="590" r="82" fill="#4b6584" opacity="0.12"/>
+  <text x="300" y="620" text-anchor="middle" font-family="Georgia, serif" font-size="28" fill="#213042">Revista mensual</text>
+</svg>
