@@ -1292,7 +1292,7 @@ main { flex: 1; }
   max-width: none;
   min-height: 100vh;
   margin: 0;
-  padding: 16px 18px 18px;
+  padding: 10px 12px 12px;
   border-radius: 0;
   background: #06101d;
   overflow: hidden;
@@ -1301,11 +1301,13 @@ main { flex: 1; }
 .flipbook-shell:fullscreen .flipbook-toolbar,
 .flipbook-shell:-webkit-full-screen .flipbook-toolbar {
   padding-right: 58px;
+  margin-bottom: 4px;
 }
 
 .flipbook-shell:fullscreen .flipbook-meta-row,
 .flipbook-shell:-webkit-full-screen .flipbook-meta-row {
   color: rgba(255, 255, 255, 0.78);
+  margin-bottom: 4px;
 }
 
 .flipbook-shell:fullscreen .assistant-text,
@@ -1346,6 +1348,13 @@ main { flex: 1; }
   flex: 1 1 auto;
   min-height: 0;
   padding: 0;
+}
+
+.flipbook-shell:fullscreen .button,
+.flipbook-shell:fullscreen .button-secondary,
+.flipbook-shell:-webkit-full-screen .button,
+.flipbook-shell:-webkit-full-screen .button-secondary {
+  padding: 10px 16px;
 }
 
 @media (max-width: 900px) {

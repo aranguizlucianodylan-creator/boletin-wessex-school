@@ -35,15 +35,16 @@ export const FlipbookViewer = ({ issue }: FlipbookViewerProps) => {
   const canFlipPrev = currentPage > 0
   const canFlipNext = currentPage < Math.max(pages.length - 1, 0)
   const isStillRendering = loadedPages > 0 && loadedPages < pageCount
+  const useSinglePageLayout = isFullscreen || isMobileLayout
 
   const recalcSize = useCallback(
     (aspect: number, fullscreen: boolean) => {
       const viewportWidth = window.innerWidth
       const viewportHeight = window.innerHeight
       const mobileLayout = viewportWidth < 900
-      const spreadPages = mobileLayout ? 1 : 2
-      const horizontalPadding = fullscreen ? 32 : 40
-      const verticalChrome = fullscreen ? 132 : 240
+      const spreadPages = fullscreen ? 1 : mobileLayout ? 1 : 2
+      const horizontalPadding = fullscreen ? 20 : 40
+      const verticalChrome = fullscreen ? 86 : 240
       const usableWidth = Math.max(viewportWidth - horizontalPadding, 260)
       const usableHeight = Math.max(viewportHeight - verticalChrome, 280)
       const pageWidth = Math.floor(
@@ -303,6 +304,7 @@ export const FlipbookViewer = ({ issue }: FlipbookViewerProps) => {
       <div className="flipbook-surface">
         <FlipBook
           ref={bookRef}
+          key={`${useSinglePageLayout ? 'single' : 'spread'}-${isFullscreen ? 'fullscreen' : 'windowed'}-${bookSize.width}-${bookSize.height}`}
           width={bookSize.width}
           height={bookSize.height}
           size="fixed"
@@ -315,7 +317,8 @@ export const FlipbookViewer = ({ issue }: FlipbookViewerProps) => {
           drawShadow
           flippingTime={420}
           showCover={false}
-          usePortrait={isMobileLayout}
+          startPage={currentPage}
+          usePortrait={useSinglePageLayout}
           startZIndex={10}
           className="demo-book"
           onFlip={(event: { data: number }) => setCurrentPage(event.data)}
