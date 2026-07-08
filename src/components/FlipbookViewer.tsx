@@ -17,36 +17,13 @@ const getRenderScale = () => {
   return 1.04
 }
 
-const buildFocusPages = (pageIndex: number, singlePageLayout: boolean) => {
-  if (singlePageLayout) {
-    return [
-      pageIndex + 1,
-      pageIndex + 2,
-      pageIndex + 3,
-      pageIndex + 4,
-      pageIndex - 1,
-    ]
-  }
-
-  return [
-    pageIndex + 1,
-    pageIndex + 2,
-    pageIndex + 3,
-    pageIndex + 4,
-    pageIndex + 5,
-    pageIndex + 6,
-    pageIndex - 1,
-    pageIndex,
-  ]
-}
-
 export const FlipbookViewer = ({ issue }: FlipbookViewerProps) => {
   const [pageCount, setPageCount] = useState(0)
   const [loadedPages, setLoadedPages] = useState(0)
   const [currentPage, setCurrentPage] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
-  const [pages, setPages] = useState<Array<string | null>>([])
+  const [pages, setPages] = useState<string[]>([])
   const [retryCount, setRetryCount] = useState(0)
   const [pageAspect, setPageAspect] = useState(1.414)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -59,26 +36,26 @@ export const FlipbookViewer = ({ issue }: FlipbookViewerProps) => {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const bookRef = useRef<any>(null)
   const shellRef = useRef<HTMLElement>(null)
-  const pagesRef = useRef<Array<string | null>>([])
-  const activeLoadIdRef = useRef(0)
-  const pendingPagesRef = useRef<Set<string>>(new Set())
 
   const pdfUrl = useMemo(() => withBasePath(issue.pdfUrl), [issue.pdfUrl])
   const displayPage = Math.min(currentPage + 1, pageCount || 1)
-  const useSinglePageLayout = isFullscreen || isMobileLayout || loadedPages < 2
-  const nextStep = useSinglePageLayout ? 1 : 2
-  const nextPageIndex = currentPage + nextStep
+  const useSinglePageLayout = isFullscreen || isMobileLayout || pages.length < 2
   const canFlipPrev = currentPage > 0
-  const canFlipNext = nextPageIndex < pageCount && Boolean(pages[nextPageIndex])
+  const canFlipNext = currentPage < Math.max(pages.length - 1, 0)
   const isStillRendering = loadedPages > 0 && loadedPages < pageCount
   const showChrome = !isFullscreen || !isReadingMode
 
   const recalcSize = useCallback(
-    (aspect: number, fullscreen: boolean, readingMode = isReadingMode) => {
+    (
+      aspect: number,
+      fullscreen: boolean,
+      readingMode: boolean,
+      loadedPageTotal: number,
+    ) => {
       const viewportWidth = window.innerWidth
       const viewportHeight = window.innerHeight
       const mobileLayout = viewportWidth < 900
-      const singlePageLayout = fullscreen || mobileLayout || loadedPages < 2
+      const singlePageLayout = fullscreen || mobileLayout || loadedPageTotal < 2
       const spreadPages = singlePageLayout ? 1 : 2
       const horizontalPadding = fullscreen ? (readingMode ? 0 : 8) : mobileLayout ? 24 : 28
       const verticalChrome = fullscreen ? (readingMode ? 0 : 18) : mobileLayout ? 170 : 190
@@ -97,22 +74,22 @@ export const FlipbookViewer = ({ issue }: FlipbookViewerProps) => {
         height: Math.max(Math.round(pageWidth * aspect), 250),
       })
     },
-    [isReadingMode, loadedPages],
+    [],
   )
 
   useEffect(() => {
     const onResize = () => {
-      recalcSize(pageAspect, Boolean(document.fullscreenElement), isReadingMode)
+      recalcSize(pageAspect, Boolean(document.fullscreenElement), isReadingMode, pages.length)
     }
 
     const onFullscreenChange = () => {
       const fullscreen = Boolean(document.fullscreenElement)
       setIsFullscreen(fullscreen)
       setIsReadingMode(fullscreen)
-      recalcSize(pageAspect, fullscreen, fullscreen)
+      recalcSize(pageAspect, fullscreen, fullscreen, pages.length)
     }
 
-    recalcSize(pageAspect, isFullscreen, isReadingMode)
+    recalcSize(pageAspect, isFullscreen, isReadingMode, pages.length)
     window.addEventListener('resize', onResize)
     document.addEventListener('fullscreenchange', onFullscreenChange)
 
@@ -120,43 +97,10 @@ export const FlipbookViewer = ({ issue }: FlipbookViewerProps) => {
       window.removeEventListener('resize', onResize)
       document.removeEventListener('fullscreenchange', onFullscreenChange)
     }
-  }, [isFullscreen, isReadingMode, pageAspect, recalcSize])
-
-  const ensurePageRendered = useCallback(
-    async (pageNumber: number, scale: number) => {
-      if (pageNumber < 1 || pageNumber > pageCount) return
-      if (pagesRef.current[pageNumber - 1]) return
-
-      const pendingKey = `${pageNumber}::${scale}`
-      if (pendingPagesRef.current.has(pendingKey)) return
-      pendingPagesRef.current.add(pendingKey)
-
-      try {
-        const result = await renderPdfPageToCanvas(pdfUrl, pageNumber, scale)
-        if (pagesRef.current[pageNumber - 1]) return
-
-        const nextPages = [...pagesRef.current]
-        nextPages[pageNumber - 1] = result.imageUrl
-        pagesRef.current = nextPages
-        setPages(nextPages)
-        setLoadedPages(nextPages.filter(Boolean).length)
-
-        if (pageNumber === 1) {
-          const ratio = result.height / result.width
-          setPageAspect(ratio)
-          recalcSize(ratio, Boolean(document.fullscreenElement), isReadingMode)
-        }
-      } finally {
-        pendingPagesRef.current.delete(pendingKey)
-      }
-    },
-    [isReadingMode, pageCount, pdfUrl, recalcSize],
-  )
+  }, [isFullscreen, isReadingMode, pageAspect, pages.length, recalcSize])
 
   useEffect(() => {
     let active = true
-    const loadId = activeLoadIdRef.current + 1
-    activeLoadIdRef.current = loadId
 
     const load = async () => {
       try {
@@ -166,40 +110,40 @@ export const FlipbookViewer = ({ issue }: FlipbookViewerProps) => {
         setPageCount(0)
         setLoadedPages(0)
         setCurrentPage(0)
-        pagesRef.current = []
-        pendingPagesRef.current.clear()
 
         const metadata = await loadPdfMetadata(pdfUrl)
-        if (!active || loadId !== activeLoadIdRef.current) return
+        if (!active) return
 
-        const blankPages = Array.from({ length: metadata.pageCount }, () => null)
-        pagesRef.current = blankPages
-        setPages(blankPages)
         setPageCount(metadata.pageCount)
 
         const renderScale = getRenderScale()
-        await ensurePageRendered(1, renderScale)
-        if (!active || loadId !== activeLoadIdRef.current) return
+        const firstPage = await renderPdfPageToCanvas(pdfUrl, 1, renderScale)
+        if (!active) return
 
+        setPages([firstPage.imageUrl])
+        setLoadedPages(1)
+
+        const ratio = firstPage.height / firstPage.width
+        setPageAspect(ratio)
+        recalcSize(ratio, Boolean(document.fullscreenElement), isReadingMode, 1)
         setIsLoading(false)
 
-        const priorityPages = metadata.pageCount > 1 ? [2] : []
-        for (const pageNumber of priorityPages) {
-          if (!active || loadId !== activeLoadIdRef.current) return
-          await ensurePageRendered(pageNumber, renderScale)
-        }
+        for (let pageNumber = 2; pageNumber <= metadata.pageCount; pageNumber += 1) {
+          if (!active) return
 
-        for (let pageNumber = 3; pageNumber <= metadata.pageCount; pageNumber += 1) {
-          if (!active || loadId !== activeLoadIdRef.current) return
-          await new Promise<void>((resolve) => window.setTimeout(resolve, 0))
-          await ensurePageRendered(pageNumber, renderScale)
+          const result = await renderPdfPageToCanvas(pdfUrl, pageNumber, renderScale)
+          if (!active) return
+
+          setPages((currentPages) => [...currentPages, result.imageUrl])
+          setLoadedPages(pageNumber)
+
+          if (pageNumber >= 3) {
+            await new Promise<void>((resolve) => window.setTimeout(resolve, 0))
+          }
         }
       } catch (err) {
         if (active) {
           setError(err instanceof Error ? err.message : 'Error cargando PDF.')
-        }
-      } finally {
-        if (active && loadId === activeLoadIdRef.current) {
           setIsLoading(false)
         }
       }
@@ -209,18 +153,7 @@ export const FlipbookViewer = ({ issue }: FlipbookViewerProps) => {
     return () => {
       active = false
     }
-  }, [ensurePageRendered, pdfUrl, retryCount])
-
-  useEffect(() => {
-    if (!pageCount || isLoading) return
-
-    const renderScale = getRenderScale()
-    const focusPages = buildFocusPages(currentPage, useSinglePageLayout)
-
-    for (const pageNumber of focusPages) {
-      void ensurePageRendered(pageNumber, renderScale)
-    }
-  }, [currentPage, ensurePageRendered, isLoading, pageCount, useSinglePageLayout])
+  }, [pdfUrl, recalcSize, retryCount])
 
   const flipNext = useCallback(() => {
     if (!canFlipNext) return
@@ -307,6 +240,10 @@ export const FlipbookViewer = ({ issue }: FlipbookViewerProps) => {
         </div>
       </section>
     )
+  }
+
+  if (!pages.length) {
+    return <LoadingState message="Preparando visor..." />
   }
 
   return (
@@ -443,7 +380,7 @@ export const FlipbookViewer = ({ issue }: FlipbookViewerProps) => {
       <div className="flipbook-surface">
         <FlipBook
           ref={bookRef}
-          key={`${useSinglePageLayout ? 'single' : 'spread'}-${isFullscreen ? 'fullscreen' : 'windowed'}-${isReadingMode ? 'reading' : 'standard'}-${bookSize.width}-${bookSize.height}`}
+          key={`${useSinglePageLayout ? 'single' : 'spread'}-${isFullscreen ? 'fullscreen' : 'windowed'}-${isReadingMode ? 'reading' : 'standard'}-${pages.length}-${bookSize.width}-${bookSize.height}`}
           width={bookSize.width}
           height={bookSize.height}
           size="fixed"
@@ -456,7 +393,7 @@ export const FlipbookViewer = ({ issue }: FlipbookViewerProps) => {
           drawShadow
           flippingTime={360}
           showCover={false}
-          startPage={currentPage}
+          startPage={Math.min(currentPage, Math.max(pages.length - 1, 0))}
           usePortrait={useSinglePageLayout}
           startZIndex={10}
           className="demo-book"
@@ -465,15 +402,9 @@ export const FlipbookViewer = ({ issue }: FlipbookViewerProps) => {
           {pages.map((src, index) => (
             <div
               key={`${issue.slug}-page-${index}`}
-              className={`flipbook-page ${src ? '' : 'flipbook-page--placeholder'}`}
+              className="flipbook-page"
             >
-              {src ? (
-                <img src={src} alt={`Pagina ${index + 1}`} loading={index < 2 ? 'eager' : 'lazy'} />
-              ) : (
-                <div className="flipbook-page-skeleton">
-                  <span>Cargando pagina {index + 1}</span>
-                </div>
-              )}
+              <img src={src} alt={`Pagina ${index + 1}`} loading={index < 2 ? 'eager' : 'lazy'} />
             </div>
           ))}
         </FlipBook>
