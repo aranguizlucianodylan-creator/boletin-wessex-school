@@ -4,7 +4,28 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLi
 
 const pdfBytesCache = new Map<string, Promise<ArrayBuffer>>()
 const pdfDocumentCache = new Map<string, Promise<any>>()
-const renderedPageCache = new Map<string, Promise<{ imageUrl: string; pageCount: number }>>()
+const renderedPageCache = new Map<string, Promise<{
+  imageUrl: string
+  pageCount: number
+  width: number
+  height: number
+}>>()
+
+const canvasToBlobUrl = (canvas: HTMLCanvasElement) =>
+  new Promise<string>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error('No se pudo convertir la pagina renderizada.'))
+          return
+        }
+
+        resolve(URL.createObjectURL(blob))
+      },
+      'image/jpeg',
+      0.84,
+    )
+  })
 
 async function fetchPdfBytes(pdfUrl: string): Promise<ArrayBuffer> {
   const absoluteUrl = pdfUrl.startsWith('blob:') || pdfUrl.startsWith('data:')
@@ -41,7 +62,7 @@ async function getPdfDocument(pdfUrl: string) {
 export const renderPdfPageToCanvas = async (
   pdfUrl: string,
   pageNumber: number,
-  scale = 1.2,
+  scale = 1,
 ) => {
   const cacheKey = `${pdfUrl}::${pageNumber}::${scale}`
 
@@ -57,8 +78,8 @@ export const renderPdfPageToCanvas = async (
         throw new Error('No se pudo crear el contexto del canvas.')
       }
 
-      canvas.width = viewport.width
-      canvas.height = viewport.height
+      canvas.width = Math.ceil(viewport.width)
+      canvas.height = Math.ceil(viewport.height)
 
       await page.render({
         canvas,
@@ -67,10 +88,17 @@ export const renderPdfPageToCanvas = async (
       }).promise
 
       page.cleanup()
+      const imageUrl = await canvasToBlobUrl(canvas)
+      const width = canvas.width
+      const height = canvas.height
+      canvas.width = 0
+      canvas.height = 0
 
       return {
-        imageUrl: canvas.toDataURL('image/jpeg', 0.86),
+        imageUrl,
         pageCount: pdf.numPages,
+        width,
+        height,
       }
     })())
   }
