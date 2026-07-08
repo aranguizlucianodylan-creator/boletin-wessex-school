@@ -1187,3 +1187,236 @@ main { flex: 1; }
   .button-row .button-secondary { flex: 1 1 100%; justify-content: center; }
   .section-heading { margin-left: 12px; margin-right: 12px; }
 }
+
+.button:disabled,
+.button-secondary:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+  filter: none;
+  box-shadow: none;
+}
+
+.magazine-page {
+  padding-bottom: 32px;
+}
+
+.flipbook-shell {
+  position: relative;
+  padding: 20px clamp(14px, 2vw, 28px);
+  min-height: min(78vh, 980px);
+}
+
+.flipbook-toolbar {
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.flipbook-nav-btns,
+.flipbook-action-btns {
+  flex-wrap: wrap;
+}
+
+.flipbook-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.flipbook-progress-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(13, 110, 138, 0.08);
+  border: 1px solid rgba(13, 110, 138, 0.18);
+  color: var(--c-teal);
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.flipbook-surface {
+  min-height: min(68vh, 980px);
+  align-items: center;
+  justify-content: center;
+  padding: 6px 0 0;
+}
+
+.demo-book {
+  margin: 0 auto;
+}
+
+.flipbook-page {
+  border-radius: 4px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.18);
+}
+
+.flipbook-page img {
+  object-fit: fill;
+}
+
+.flipbook-fullscreen-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 40;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+}
+
+.flipbook-fullscreen-close:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.flipbook-shell--fullscreen {
+  background: #06101d;
+}
+
+.flipbook-shell:fullscreen,
+.flipbook-shell:-webkit-full-screen {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  min-height: 100vh;
+  margin: 0;
+  padding: 16px 18px 18px;
+  border-radius: 0;
+  background: #06101d;
+  overflow: hidden;
+}
+
+.flipbook-shell:fullscreen .flipbook-toolbar,
+.flipbook-shell:-webkit-full-screen .flipbook-toolbar {
+  padding-right: 58px;
+}
+
+.flipbook-shell:fullscreen .flipbook-meta-row,
+.flipbook-shell:-webkit-full-screen .flipbook-meta-row {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.flipbook-shell:fullscreen .assistant-text,
+.flipbook-shell:-webkit-full-screen .assistant-text {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.flipbook-shell:fullscreen .flipbook-page-pill,
+.flipbook-shell:-webkit-full-screen .flipbook-page-pill {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.flipbook-shell:fullscreen .button,
+.flipbook-shell:-webkit-full-screen .button {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  box-shadow: none;
+}
+
+.flipbook-shell:fullscreen .button-secondary,
+.flipbook-shell:-webkit-full-screen .button-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  box-shadow: none;
+}
+
+.flipbook-shell:fullscreen .flipbook-progress-badge,
+.flipbook-shell:-webkit-full-screen .flipbook-progress-badge {
+  color: white;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.flipbook-shell:fullscreen .flipbook-surface,
+.flipbook-shell:-webkit-full-screen .flipbook-surface {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0;
+}
+
+@media (max-width: 900px) {
+  .flipbook-shell {
+    min-height: auto;
+  }
+
+  .flipbook-toolbar,
+  .flipbook-meta-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .flipbook-nav-btns,
+  .flipbook-action-btns {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .flipbook-nav-btns .button,
+  .flipbook-action-btns .button,
+  .flipbook-action-btns .button-secondary {
+    flex: 1 1 0;
+  }
+
+  .flipbook-page-pill,
+  .flipbook-progress-badge {
+    justify-content: center;
+  }
+
+  .flipbook-surface {
+    min-height: min(62vh, 760px);
+  }
+}
+
+@media (max-width: 640px) {
+  .flipbook-shell {
+    padding: 16px 12px;
+  }
+
+  .flipbook-nav-btns,
+  .flipbook-action-btns {
+    gap: 8px;
+  }
+
+  .flipbook-nav-btns {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+  }
+
+  .flipbook-action-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .flipbook-page-pill {
+    padding-inline: 12px;
+  }
+
+  .flipbook-fullscreen-close {
+    top: 12px;
+    right: 12px;
+  }
+
+  .flipbook-shell:fullscreen,
+  .flipbook-shell:-webkit-full-screen {
+    padding: 12px;
+  }
+
+  .flipbook-shell:fullscreen .flipbook-toolbar,
+  .flipbook-shell:-webkit-full-screen .flipbook-toolbar {
+    padding-right: 54px;
+  }
+}

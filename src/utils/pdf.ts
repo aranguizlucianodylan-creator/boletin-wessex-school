@@ -1,26 +1,41 @@
 import * as pdfjsLib from 'pdfjs-dist'
 
-// Use unpkg CDN for the worker — avoids Vite bundling issues in production
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`
 
-// Cache fetched PDF bytes by URL so each page render reuses the same buffer
-const pdfCache = new Map<string, ArrayBuffer>()
+const pdfBytesCache = new Map<string, Promise<ArrayBuffer>>()
+const pdfDocumentCache = new Map<string, Promise<any>>()
+const renderedPageCache = new Map<string, Promise<{ imageUrl: string; pageCount: number }>>()
 
 async function fetchPdfBytes(pdfUrl: string): Promise<ArrayBuffer> {
-  // Resolve to absolute URL using the main thread's origin (same-origin, no CORS)
   const absoluteUrl = pdfUrl.startsWith('blob:') || pdfUrl.startsWith('data:')
     ? pdfUrl
     : new URL(pdfUrl, window.location.href).toString()
 
-  if (pdfCache.has(absoluteUrl)) {
-    return pdfCache.get(absoluteUrl)!
+  if (!pdfBytesCache.has(absoluteUrl)) {
+    pdfBytesCache.set(absoluteUrl, (async () => {
+      const response = await fetch(absoluteUrl)
+      if (!response.ok) throw new Error(`HTTP ${response.status} al obtener el PDF.`)
+      return response.arrayBuffer()
+    })())
   }
 
-  const res = await fetch(absoluteUrl)
-  if (!res.ok) throw new Error(`HTTP ${res.status} al obtener el PDF.`)
-  const data = await res.arrayBuffer()
-  pdfCache.set(absoluteUrl, data)
-  return data
+  return pdfBytesCache.get(absoluteUrl)!
+}
+
+async function getPdfDocument(pdfUrl: string) {
+  const absoluteUrl = pdfUrl.startsWith('blob:') || pdfUrl.startsWith('data:')
+    ? pdfUrl
+    : new URL(pdfUrl, window.location.href).toString()
+
+  if (!pdfDocumentCache.has(absoluteUrl)) {
+    pdfDocumentCache.set(absoluteUrl, (async () => {
+      const data = await fetchPdfBytes(absoluteUrl)
+      const loadingTask = pdfjsLib.getDocument({ data: data.slice(0), verbosity: 0 })
+      return loadingTask.promise
+    })())
+  }
+
+  return pdfDocumentCache.get(absoluteUrl)!
 }
 
 export const renderPdfPageToCanvas = async (
@@ -28,35 +43,42 @@ export const renderPdfPageToCanvas = async (
   pageNumber: number,
   scale = 1.2,
 ) => {
-  // Fetch in main thread → pass as ArrayBuffer → worker gets data via postMessage (no CORS)
-  const data = await fetchPdfBytes(pdfUrl)
-  const loadingTask = pdfjsLib.getDocument({ data: data.slice(0), verbosity: 0 })
-  const pdf = await loadingTask.promise
-  const page = await pdf.getPage(pageNumber)
-  const viewport = page.getViewport({ scale })
-  const canvas = document.createElement('canvas')
-  const context = canvas.getContext('2d')
+  const cacheKey = `${pdfUrl}::${pageNumber}::${scale}`
 
-  if (!context) {
-    throw new Error('No se pudo crear el contexto del canvas.')
+  if (!renderedPageCache.has(cacheKey)) {
+    renderedPageCache.set(cacheKey, (async () => {
+      const pdf = await getPdfDocument(pdfUrl)
+      const page = await pdf.getPage(pageNumber)
+      const viewport = page.getViewport({ scale })
+      const canvas = document.createElement('canvas')
+      const context = canvas.getContext('2d')
+
+      if (!context) {
+        throw new Error('No se pudo crear el contexto del canvas.')
+      }
+
+      canvas.width = viewport.width
+      canvas.height = viewport.height
+
+      await page.render({
+        canvas,
+        canvasContext: context,
+        viewport,
+      }).promise
+
+      page.cleanup()
+
+      return {
+        imageUrl: canvas.toDataURL('image/jpeg', 0.86),
+        pageCount: pdf.numPages,
+      }
+    })())
   }
 
-  canvas.width = viewport.width
-  canvas.height = viewport.height
-
-  await page.render({
-    canvas,
-    canvasContext: context,
-    viewport,
-  }).promise
-
-  return { imageUrl: canvas.toDataURL('image/png'), pageCount: pdf.numPages }
+  return renderedPageCache.get(cacheKey)!
 }
 
 export const loadPdfMetadata = async (pdfUrl: string) => {
-  const data = await fetchPdfBytes(pdfUrl)
-  const loadingTask = pdfjsLib.getDocument({ data: data.slice(0), verbosity: 0 })
-  const pdf = await loadingTask.promise
+  const pdf = await getPdfDocument(pdfUrl)
   return { pageCount: pdf.numPages }
 }
-
