@@ -388,7 +388,7 @@ export const FlipbookViewer = ({ issue }: FlipbookViewerProps) => {
           mobileScrollSupport
           drawShadow
           flippingTime={360}
-          showCover={false}
+          showCover
           startPage={Math.min(currentPage, Math.max(pages.length - 1, 0))}
           usePortrait={useSinglePageLayout}
           startZIndex={10}
@@ -399,6 +399,7 @@ export const FlipbookViewer = ({ issue }: FlipbookViewerProps) => {
             <div
               key={`${issue.slug}-page-${index}`}
               className="flipbook-page"
+              data-density={index === 0 || index === pageCount - 1 ? 'hard' : 'soft'}
             >
               <img src={src} alt={`Pagina ${index + 1}`} loading={index < 2 ? 'eager' : 'lazy'} />
             </div>
