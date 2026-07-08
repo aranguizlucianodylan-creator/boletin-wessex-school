@@ -1,5 +1,18 @@
 [
   {
+    "id": "boletin-the-wessex-school-agosto-2026",
+    "title": "Boletin The Wessex School",
+    "month": "Agosto",
+    "year": 2026,
+    "slug": "boletin-the-wessex-school-agosto-2026",
+    "description": "Boletin mensual de Agosto 2026.",
+    "pdfUrl": "/pdfs/boletin-the-wessex-school.pdf",
+    "audioUrl": "https://www.youtube.com/watch?v=3SGNtFQ1v3M&list=RD3SGNtFQ1v3M&start_radio=1",
+    "coverUrl": "",
+    "publishedAt": "2026-07-08",
+    "featured": true
+  },
+  {
     "id": "boletin-the-wessex-school-julio-2026",
     "title": "Boletin The Wessex School",
     "month": "Julio",
@@ -10,6 +23,6 @@
     "audioUrl": "",
     "coverUrl": "",
     "publishedAt": "2026-07-08",
-    "featured": true
+    "featured": false
   }
 ]
