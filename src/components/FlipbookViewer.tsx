@@ -43,8 +43,8 @@ export const FlipbookViewer = ({ issue }: FlipbookViewerProps) => {
       const viewportHeight = window.innerHeight
       const mobileLayout = viewportWidth < 900
       const spreadPages = fullscreen ? 1 : mobileLayout ? 1 : 2
-      const horizontalPadding = fullscreen ? 20 : 40
-      const verticalChrome = fullscreen ? 86 : 240
+      const horizontalPadding = fullscreen ? 8 : mobileLayout ? 24 : 28
+      const verticalChrome = fullscreen ? 18 : mobileLayout ? 170 : 190
       const usableWidth = Math.max(viewportWidth - horizontalPadding, 260)
       const usableHeight = Math.max(viewportHeight - verticalChrome, 280)
       const pageWidth = Math.floor(
