@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { Issue } from '../types/issue'
+import { warmPdfPreview } from '../utils/pdf'
 import { formatIssueDate } from '../utils/issues'
 import { withBasePath } from '../utils/paths'
 
@@ -9,6 +10,10 @@ interface IssueCardProps {
 
 export const IssueCard = ({ issue }: IssueCardProps) => {
   const coverSrc = withBasePath(issue.coverUrl || '/images/placeholder-cover.svg')
+  const pdfSrc = withBasePath(issue.pdfUrl)
+  const handlePreload = () => {
+    void warmPdfPreview(pdfSrc)
+  }
 
   return (
     <article className="issue-card">
@@ -23,7 +28,13 @@ export const IssueCard = ({ issue }: IssueCardProps) => {
         <p>{issue.description}</p>
         <div className="issue-card__footer">
           <span>{formatIssueDate(issue.publishedAt)}</span>
-          <Link to={`/revista/${issue.slug}`} className="button button-secondary">
+          <Link
+            to={`/revista/${issue.slug}`}
+            className="button button-secondary"
+            onMouseEnter={handlePreload}
+            onFocus={handlePreload}
+            onTouchStart={handlePreload}
+          >
             Abrir revista
           </Link>
         </div>

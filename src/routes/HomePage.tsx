@@ -5,8 +5,9 @@ import { Footer } from '../components/Footer'
 import { IssueCard } from '../components/IssueCard'
 import { LoadingState } from '../components/LoadingState'
 import type { Issue } from '../types/issue'
+import { warmPdfPreview } from '../utils/pdf'
 import { sortIssues } from '../utils/issues'
-import { buildIssuesUrl } from '../utils/paths'
+import { buildIssuesUrl, withBasePath } from '../utils/paths'
 
 export const HomePage = () => {
   const [issues, setIssues] = useState<Issue[]>([])
@@ -25,6 +26,11 @@ export const HomePage = () => {
   }, [])
 
   const featuredIssue = useMemo(() => issues.find((issue) => issue.featured) || issues[0], [issues])
+
+  useEffect(() => {
+    if (!featuredIssue) return
+    void warmPdfPreview(withBasePath(featuredIssue.pdfUrl))
+  }, [featuredIssue])
 
   const years = useMemo(() => {
     const uniqueYears = Array.from(new Set(issues.map((issue) => issue.year)))

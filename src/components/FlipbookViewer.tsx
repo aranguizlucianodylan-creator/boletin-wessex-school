@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import HTMLFlipBook from 'react-pageflip'
 import type { Issue } from '../types/issue'
 import { LoadingState } from './LoadingState'
-import { loadPdfMetadata, renderPdfPageToCanvas } from '../utils/pdf'
+import { renderPdfPageToCanvas } from '../utils/pdf'
 import { withBasePath } from '../utils/paths'
 
 const FlipBook = HTMLFlipBook as unknown as React.ComponentType<any>
@@ -111,15 +111,11 @@ export const FlipbookViewer = ({ issue }: FlipbookViewerProps) => {
         setLoadedPages(0)
         setCurrentPage(0)
 
-        const metadata = await loadPdfMetadata(pdfUrl)
-        if (!active) return
-
-        setPageCount(metadata.pageCount)
-
         const renderScale = getRenderScale()
         const firstPage = await renderPdfPageToCanvas(pdfUrl, 1, renderScale)
         if (!active) return
 
+        setPageCount(firstPage.pageCount)
         setPages([firstPage.imageUrl])
         setLoadedPages(1)
 
@@ -128,7 +124,7 @@ export const FlipbookViewer = ({ issue }: FlipbookViewerProps) => {
         recalcSize(ratio, Boolean(document.fullscreenElement), isReadingMode, 1)
         setIsLoading(false)
 
-        for (let pageNumber = 2; pageNumber <= metadata.pageCount; pageNumber += 1) {
+        for (let pageNumber = 2; pageNumber <= firstPage.pageCount; pageNumber += 1) {
           if (!active) return
 
           const result = await renderPdfPageToCanvas(pdfUrl, pageNumber, renderScale)

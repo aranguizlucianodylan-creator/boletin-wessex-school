@@ -1,6 +1,7 @@
 import * as pdfjsLib from 'pdfjs-dist'
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl
 
 const pdfBytesCache = new Map<string, Promise<ArrayBuffer>>()
 const pdfDocumentCache = new Map<string, Promise<any>>()
@@ -10,6 +11,12 @@ const renderedPageCache = new Map<string, Promise<{
   width: number
   height: number
 }>>()
+
+const resolvePdfUrl = (pdfUrl: string) => (
+  pdfUrl.startsWith('blob:') || pdfUrl.startsWith('data:')
+    ? pdfUrl
+    : new URL(pdfUrl, window.location.href).toString()
+)
 
 const canvasToBlobUrl = (canvas: HTMLCanvasElement) =>
   new Promise<string>((resolve, reject) => {
@@ -28,9 +35,7 @@ const canvasToBlobUrl = (canvas: HTMLCanvasElement) =>
   })
 
 async function fetchPdfBytes(pdfUrl: string): Promise<ArrayBuffer> {
-  const absoluteUrl = pdfUrl.startsWith('blob:') || pdfUrl.startsWith('data:')
-    ? pdfUrl
-    : new URL(pdfUrl, window.location.href).toString()
+  const absoluteUrl = resolvePdfUrl(pdfUrl)
 
   if (!pdfBytesCache.has(absoluteUrl)) {
     pdfBytesCache.set(absoluteUrl, (async () => {
@@ -44,14 +49,21 @@ async function fetchPdfBytes(pdfUrl: string): Promise<ArrayBuffer> {
 }
 
 async function getPdfDocument(pdfUrl: string) {
-  const absoluteUrl = pdfUrl.startsWith('blob:') || pdfUrl.startsWith('data:')
-    ? pdfUrl
-    : new URL(pdfUrl, window.location.href).toString()
+  const absoluteUrl = resolvePdfUrl(pdfUrl)
 
   if (!pdfDocumentCache.has(absoluteUrl)) {
     pdfDocumentCache.set(absoluteUrl, (async () => {
-      const data = await fetchPdfBytes(absoluteUrl)
-      const loadingTask = pdfjsLib.getDocument({ data: data.slice(0), verbosity: 0 })
+      const loadingTask = absoluteUrl.startsWith('blob:') || absoluteUrl.startsWith('data:')
+        ? pdfjsLib.getDocument({
+            data: (await fetchPdfBytes(absoluteUrl)).slice(0),
+            verbosity: 0,
+          })
+        : pdfjsLib.getDocument({
+            url: absoluteUrl,
+            verbosity: 0,
+            disableAutoFetch: false,
+            disableStream: false,
+          })
       return loadingTask.promise
     })())
   }
@@ -64,11 +76,12 @@ export const renderPdfPageToCanvas = async (
   pageNumber: number,
   scale = 1,
 ) => {
-  const cacheKey = `${pdfUrl}::${pageNumber}::${scale}`
+  const absoluteUrl = resolvePdfUrl(pdfUrl)
+  const cacheKey = `${absoluteUrl}::${pageNumber}::${scale}`
 
   if (!renderedPageCache.has(cacheKey)) {
     renderedPageCache.set(cacheKey, (async () => {
-      const pdf = await getPdfDocument(pdfUrl)
+      const pdf = await getPdfDocument(absoluteUrl)
       const page = await pdf.getPage(pageNumber)
       const viewport = page.getViewport({ scale })
       const canvas = document.createElement('canvas')
@@ -109,4 +122,12 @@ export const renderPdfPageToCanvas = async (
 export const loadPdfMetadata = async (pdfUrl: string) => {
   const pdf = await getPdfDocument(pdfUrl)
   return { pageCount: pdf.numPages }
+}
+
+export const warmPdfPreview = async (pdfUrl: string, scale = 0.82) => {
+  try {
+    await renderPdfPageToCanvas(pdfUrl, 1, scale)
+  } catch {
+    // Best-effort preloading only.
+  }
 }
